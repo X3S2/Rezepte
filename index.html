@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>🍴 Rezeptgenerator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <div class="container mx-auto p-6 max-w-4xl">
+    <h1 class="text-4xl font-bold text-center mb-6">🍴 Rezeptgenerator</h1>
+
+    <!-- Formular -->
+    <div class="bg-white shadow-lg rounded-2xl p-6 mb-6">
+      <label class="block mb-2 font-semibold">Rezeptname</label>
+      <input id="recipeName" type="text" class="w-full p-2 border rounded-lg mb-4">
+
+      <div class="grid grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="block font-semibold">Schwierigkeit</label>
+          <select id="difficulty" class="w-full p-2 border rounded-lg">
+            <option value="1">★☆☆☆☆ (1)</option>
+            <option value="2">★★☆☆☆ (2)</option>
+            <option value="3" selected>★★★☆☆ (3)</option>
+            <option value="4">★★★★☆ (4)</option>
+            <option value="5">★★★★★ (5)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-semibold">Vorbereitungszeit (Min.)</label>
+          <input id="prepTime" type="number" class="w-full p-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="block font-semibold">Kochzeit (Min.)</label>
+          <input id="cookTime" type="number" class="w-full p-2 border rounded-lg">
+        </div>
+      </div>
+
+      <label class="block font-semibold">Bild hochladen</label>
+      <input id="imageUpload" type="file" accept="image/*" class="mb-4">
+
+      <!-- Zutaten -->
+      <div class="mb-4">
+        <h2 class="text-xl font-bold mb-2">📝 Zutaten</h2>
+        <div id="ingredients"></div>
+        <button onclick="addIngredient()" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">+ Zutat hinzufügen</button>
+      </div>
+
+      <!-- Schritte -->
+      <div class="mb-4">
+        <h2 class="text-xl font-bold mb-2">👨‍🍳 Zubereitung</h2>
+        <div id="steps"></div>
+        <button onclick="addStep()" class="mt-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">+ Schritt hinzufügen</button>
+      </div>
+
+      <!-- Tipps -->
+      <div class="mb-4">
+        <h2 class="text-xl font-bold mb-2">💡 Tipps</h2>
+        <div id="tips"></div>
+        <button onclick="addTip()" class="mt-2 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg">+ Tipp hinzufügen</button>
+      </div>
+
+      <!-- PDF Export -->
+  <button onclick="generatePDF()" class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl w-full">📄 Rezept als PDF exportieren</button>
+  <button onclick="exportImage()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl w-full mt-2">🖼️ Rezept als Bild exportieren</button>
+    </div>
+
+    <!-- Vorschau -->
+  <div id="preview" class="bg-white shadow-lg rounded-2xl p-6" style="background-color: #fff;">
+      <h2 class="text-2xl font-bold mb-2" id="previewName">Rezeptname</h2>
+      <img id="previewImage" src="assets/placeholder.png" class="w-full max-h-64 object-cover rounded-lg mb-4">
+      <p id="previewMeta" class="italic text-gray-600 mb-4">Schwierigkeit: ★★★☆☆ | Gesamtzeit: 60 Min. (20 Min. Vorbereitung, 40 Min. Kochen)</p>
+      <h3 class="text-xl font-semibold">📝 Zutaten</h3>
+      <ul id="previewIngredients" class="list-disc pl-6 mb-4"></ul>
+      <h3 class="text-xl font-semibold">👨‍🍳 Zubereitung</h3>
+      <ol id="previewSteps" class="list-decimal pl-6 mb-4"></ol>
+      <h3 class="text-xl font-semibold">💡 Tipps</h3>
+      <ul id="previewTips" class="list-disc pl-6"></ul>
+    </div>
+  </div>
+
+  <script src="libs/html2pdf.bundle.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
