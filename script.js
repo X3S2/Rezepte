@@ -368,13 +368,13 @@ function generatePDF() {
     title.textContent = recipeName;
     block1.appendChild(title);
 
-    const img = document.createElement('img');
-    img.src = imageUrl;
-    img.style.width = '100%';
-    img.style.maxHeight = '100mm';
-    img.style.objectFit = 'contain';
-    img.style.marginBottom = '10mm';
-    block1.appendChild(img);
+    const recipeImage = document.createElement('img');
+    recipeImage.src = imageUrl;
+    recipeImage.style.width = '100%';
+    recipeImage.style.maxHeight = '100mm';
+    recipeImage.style.objectFit = 'contain';
+    recipeImage.style.marginBottom = '10mm';
+    block1.appendChild(recipeImage);
 
     const difficulty = document.getElementById("difficulty").value;
     const stars = "★★★★★☆☆☆☆☆".slice(5 - difficulty, 10 - difficulty);
@@ -490,6 +490,16 @@ function generatePDF() {
         container.appendChild(block4);
     }
 
+    // Warte bis das Bild geladen ist
+    const loadedImage = container.querySelector('img');
+    const imagePromise = new Promise((resolve) => {
+        if (loadedImage.complete) {
+            resolve();
+        } else {
+            loadedImage.onload = resolve;
+        }
+    });
+
     // Zeige Ladeindikator
     const loadingMsg = document.createElement("div");
     loadingMsg.innerText = "PDF wird erstellt...";
@@ -514,37 +524,25 @@ function generatePDF() {
             html2canvas: { 
                 scale: 2,
                 useCORS: true,
-                logging: true,
-                allowTaint: true,
-                backgroundColor: '#ffffff',
-                width: 795, // A4 Breite in Pixeln bei 96 DPI
-                height: 1123, // A4 Höhe in Pixeln bei 96 DPI
-                onclone: function(clonedDoc) {
-                    // Zusätzliche Stile für geklontes Element
-                    const clonedElement = clonedDoc.querySelector('#preview');
-                    if (clonedElement) {
-                        clonedElement.style.transformOrigin = 'top left';
-                        clonedElement.style.transform = 'scale(1)';
-                    }
-                }
+                logging: false,
+                allowTaint: true
             },
             jsPDF: { 
                 unit: 'mm', 
                 format: 'a4', 
-                orientation: 'portrait',
-                compress: true
-            }
+                orientation: 'portrait'
+            },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
         };
 
-        // PDF generieren mit Fehlerbehandlung
+        // PDF erstellen
         html2pdf()
             .set(opt)
-            .from(pdfContent)
+            .from(container)
             .save()
             .then(() => {
                 document.body.removeChild(loadingMsg);
                 document.body.removeChild(container);
-                console.log('PDF erfolgreich erstellt');
             })
             .catch(error => {
                 console.error('PDF-Export Fehler:', error);
