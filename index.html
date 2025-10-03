@@ -7,11 +7,23 @@
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gray-100 text-gray-800">
   <div class="container mx-auto p-6 max-w-4xl">
     <h1 class="text-4xl font-bold text-center mb-6">🍴 Rezeptgenerator</h1>
+
+    <!-- Import/Export Buttons -->
+    <div class="flex gap-4 mb-6">
+      <button onclick="exportRecipe()" class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">
+        💾 Rezept exportieren
+      </button>
+      <label class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg cursor-pointer text-center">
+        📂 Rezept importieren
+        <input type="file" accept=".zip" onchange="importRecipe(this.files[0])" class="hidden">
+      </label>
+    </div>
 
     <!-- Formular -->
     <div class="bg-white shadow-lg rounded-2xl p-6 mb-6">
@@ -63,9 +75,11 @@
         <button onclick="addTip()" class="mt-2 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg">+ Tipp hinzufügen</button>
       </div>
 
-      <!-- PDF Export -->
-  <button onclick="generatePDF()" class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl w-full">📄 Rezept als PDF exportieren</button>
-  <button onclick="exportImage()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl w-full mt-2">🖼️ Rezept als Bild exportieren</button>
+      <!-- Export Buttons -->
+      <div class="flex gap-4">
+        <button onclick="exportImage()" class="flex-1 bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-xl">🖼️ Als Bild speichern</button>
+        <button onclick="generatePDF()" class="flex-1 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl">📄 Als PDF speichern</button>
+      </div>
     </div>
 
     <!-- Vorschau -->

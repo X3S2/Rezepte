@@ -1,22 +1,163 @@
+// Export als ZIP-Datei mit allen Rezeptdaten
+async function exportRecipe() {
+    const recipeName = document.getElementById("recipeName").value;
+    if (!recipeName) {
+        alert("Bitte geben Sie einen Namen für das Rezept ein.");
+        return;
+    }
+
+    try {
+        // Erstelle ein neues ZIP
+        const zip = new JSZip();
+        
+        // Sammle alle Rezeptdaten
+        const recipeData = {
+            name: recipeName,
+            difficulty: document.getElementById("difficulty").value,
+            prepTime: document.getElementById("prepTime").value,
+            cookTime: document.getElementById("cookTime").value,
+            ingredients: [],
+            steps: [],
+            tips: []
+        };
+
+        // Zutaten sammeln
+        document.querySelectorAll("#ingredients .flex").forEach(row => {
+            const menge = row.querySelector("input[type='number']").value;
+            const einheit = row.querySelector("select").value;
+            const zutat = row.querySelector("input[type='text']").value;
+            if (menge && zutat) {
+                recipeData.ingredients.push({ menge, einheit, zutat });
+            }
+        });
+
+        // Schritte sammeln
+        document.querySelectorAll("#steps textarea").forEach(step => {
+            if (step.value.trim()) {
+                recipeData.steps.push(step.value.trim());
+            }
+        });
+
+        // Tipps sammeln
+        document.querySelectorAll("#tips input").forEach(tip => {
+            if (tip.value.trim()) {
+                recipeData.tips.push(tip.value.trim());
+            }
+        });
+
+        // Bild hinzufügen
+        const imageData = document.getElementById("previewImage").src;
+        if (imageData && !imageData.includes('placeholder.png')) {
+            // Wenn es ein Base64-Bild ist, extrahiere die Daten
+            const base64Data = imageData.split(',')[1];
+            zip.file("image.png", base64Data, {base64: true});
+            recipeData.hasImage = true;
+        } else {
+            recipeData.hasImage = false;
+        }
+
+        // Füge die Rezeptdaten als JSON hinzu
+        zip.file("recipe.json", JSON.stringify(recipeData, null, 2));
+
+        // Generiere die ZIP-Datei
+        const content = await zip.generateAsync({type: "blob"});
+        
+        // Erstelle Download-Link
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = `${recipeName}.zip`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    } catch (error) {
+        console.error('Export-Fehler:', error);
+        alert('Fehler beim Exportieren: ' + error.message);
+    }
+}
+
+// Import einer ZIP-Datei mit Rezeptdaten
+async function importRecipe(file) {
+    try {
+        const zip = new JSZip();
+        const contents = await zip.loadAsync(file);
+        
+        // Lade die Rezeptdaten
+        const recipeJSON = await contents.file("recipe.json").async("string");
+        const recipeData = JSON.parse(recipeJSON);
+        
+        // Setze die Grunddaten
+        document.getElementById("recipeName").value = recipeData.name;
+        document.getElementById("difficulty").value = recipeData.difficulty;
+        document.getElementById("prepTime").value = recipeData.prepTime;
+        document.getElementById("cookTime").value = recipeData.cookTime;
+        
+        // Lösche bestehende Einträge
+        document.getElementById("ingredients").innerHTML = "";
+        document.getElementById("steps").innerHTML = "";
+        document.getElementById("tips").innerHTML = "";
+        
+        // Zähler zurücksetzen
+        ingredientCount = 0;
+        stepCount = 0;
+        tipCount = 0;
+        
+        // Zutaten wiederherstellen
+        for (const ing of recipeData.ingredients) {
+            addIngredient();
+            const lastRow = document.querySelector("#ingredients .flex:last-child");
+            lastRow.querySelector("input[type='number']").value = ing.menge;
+            lastRow.querySelector("select").value = ing.einheit;
+            lastRow.querySelector("input[type='text']").value = ing.zutat;
+        }
+        
+        // Schritte wiederherstellen
+        for (const step of recipeData.steps) {
+            addStep();
+            const lastStep = document.querySelector("#steps textarea:last-child");
+            lastStep.value = step;
+        }
+        
+        // Tipps wiederherstellen
+        for (const tip of recipeData.tips) {
+            addTip();
+            const lastTip = document.querySelector("#tips input:last-child");
+            lastTip.value = tip;
+        }
+        
+        // Bild wiederherstellen, falls vorhanden
+        if (recipeData.hasImage) {
+            const imageData = await contents.file("image.png").async("base64");
+            document.getElementById("previewImage").src = `data:image/png;base64,${imageData}`;
+        }
+        
+        // Vorschau aktualisieren
+        updatePreview();
+        
+    } catch (error) {
+        console.error('Import-Fehler:', error);
+        alert('Fehler beim Importieren: ' + error.message);
+    }
+}
+
 // Exportiere die Vorschau als Bild (PNG)
 function exportImage() {
-  const element = document.getElementById("preview");
-  if (window.domtoimage && typeof window.domtoimage.toPng === 'function') {
-    window.domtoimage.toPng(element, { bgcolor: '#fff' })
-      .then(function (dataUrl) {
-        const link = document.createElement('a');
-        link.download = `${document.getElementById("recipeName").value || "Rezept"}.png`;
-        link.href = dataUrl;
-        link.click();
-      })
-      .catch(function (error) {
-        alert('Bild-Export fehlgeschlagen: ' + (error && error.message ? error.message : error));
-        console.error('Bild-Export Fehler:', error);
-      });
-  } else {
-    alert('Bild-Export nicht möglich: dom-to-image Bibliothek wurde nicht geladen.');
-  }
+    const element = document.getElementById("preview");
+    if (window.domtoimage && typeof window.domtoimage.toPng === 'function') {
+        window.domtoimage.toPng(element, { bgcolor: '#fff' })
+            .then(function (dataUrl) {
+                const link = document.createElement('a');
+                link.download = `${document.getElementById("recipeName").value || "Rezept"}.png`;
+                link.href = dataUrl;
+                link.click();
+            })
+            .catch(function (error) {
+                alert('Bild-Export fehlgeschlagen: ' + (error && error.message ? error.message : error));
+                console.error('Bild-Export Fehler:', error);
+            });
+    } else {
+        alert('Bild-Export nicht möglich: dom-to-image Bibliothek wurde nicht geladen.');
+    }
 }
+
 let ingredientCount = 0, stepCount = 0, tipCount = 0;
 
 function addIngredient() {
