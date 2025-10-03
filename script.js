@@ -316,13 +316,114 @@ function updatePreview() {
 }
 
 function generatePDF() {
-  const element = document.getElementById("preview");
-  const opt = {
-    margin:       0.5,
-    filename:     `${document.getElementById("recipeName").value || "Rezept"}.pdf`,
-    image:        { type: 'jpeg', quality: 0.95 },
-    html2canvas:  { scale: 2 },
-    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-  };
-  html2pdf().set(opt).from(element).save();
+    // Validierung der Pflichtfelder
+    const errors = [];
+    const recipeName = document.getElementById("recipeName").value;
+    const prepTime = document.getElementById("prepTime").value;
+    const cookTime = document.getElementById("cookTime").value;
+    const ingredients = document.querySelectorAll("#ingredients .flex");
+    const steps = document.querySelectorAll("#steps textarea");
+    const imageUrl = document.getElementById("previewImage").src;
+
+    if (!recipeName) errors.push("Name des Rezepts");
+    if (!prepTime) errors.push("Vorbereitungszeit");
+    if (!cookTime) errors.push("Kochzeit");
+    if (ingredients.length === 0 || !Array.from(ingredients).some(row => 
+        row.querySelector("input[type='number']").value && 
+        row.querySelector("input[type='text']").value)) {
+        errors.push("mindestens eine Zutat");
+    }
+    if (steps.length === 0 || !Array.from(steps).some(step => step.value.trim())) {
+        errors.push("mindestens einen Zubereitungsschritt");
+    }
+    if (imageUrl.includes('placeholder.png')) errors.push("ein Bild");
+
+    if (errors.length > 0) {
+        alert(`Bitte fülle folgende Pflichtfelder aus, bevor du ein PDF erstellst:\n\n- ${errors.join("\n- ")}`);
+        return;
+    }
+
+    // Überprüfe, ob html2pdf verfügbar ist
+    if (typeof html2pdf === 'undefined') {
+        alert('PDF-Export nicht möglich: Die PDF-Bibliothek konnte nicht geladen werden.');
+        return;
+    }
+
+    const element = document.getElementById("preview");
+    // Erstelle eine Kopie des Elements für den PDF-Export
+    const pdfContent = element.cloneNode(true);
+    pdfContent.style.width = '210mm'; // A4 Breite
+    pdfContent.style.padding = '15mm';
+    pdfContent.style.backgroundColor = 'white';
+    
+    // Stelle sicher, dass das Bild vollständig geladen ist
+    const image = pdfContent.querySelector('#previewImage');
+    const imagePromise = new Promise((resolve) => {
+        if (image.complete) {
+            resolve();
+        } else {
+            image.onload = resolve;
+        }
+    });
+
+    // Zeige Ladeindikator
+    const loadingMsg = document.createElement("div");
+    loadingMsg.innerText = "PDF wird erstellt...";
+    loadingMsg.style.position = "fixed";
+    loadingMsg.style.top = "50%";
+    loadingMsg.style.left = "50%";
+    loadingMsg.style.transform = "translate(-50%, -50%)";
+    loadingMsg.style.padding = "1rem 2rem";
+    loadingMsg.style.backgroundColor = "#4CAF50";
+    loadingMsg.style.color = "white";
+    loadingMsg.style.borderRadius = "0.5rem";
+    loadingMsg.style.zIndex = "1000";
+    document.body.appendChild(loadingMsg);
+
+    // Warte bis das Bild geladen ist und erstelle dann das PDF
+    imagePromise.then(() => {
+        // PDF-Optionen
+        const opt = {
+            margin: [15, 15, 15, 15], // Ränder in mm
+            filename: `${recipeName}.pdf`,
+            image: { type: 'jpeg', quality: 1 },
+            html2canvas: { 
+                scale: 2,
+                useCORS: true,
+                logging: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff',
+                windowWidth: 800, // Feste Breite für konsistentes Rendering
+                onclone: function(clonedDoc) {
+                    // Stelle sicher, dass alle Stile korrekt übernommen wurden
+                    const clonedElement = clonedDoc.querySelector('#preview');
+                    clonedElement.style.width = '100%';
+                    clonedElement.style.margin = '0';
+                    clonedElement.style.padding = '15mm';
+                }
+            },
+            jsPDF: { 
+                unit: 'mm', 
+                format: 'a4', 
+                orientation: 'portrait',
+                compress: true,
+                hotfixes: ['px_scaling']
+            }
+        };
+
+        // PDF generieren mit Fehlerbehandlung
+        html2pdf()
+            .set(opt)
+            .from(pdfContent)
+            .save()
+            .then(() => {
+                document.body.removeChild(loadingMsg);
+                console.log('PDF erfolgreich erstellt');
+            })
+            .catch(error => {
+                console.error('PDF-Export Fehler:', error);
+                alert('Beim PDF-Export ist ein Fehler aufgetreten. Bitte versuche es erneut.');
+                document.body.removeChild(loadingMsg);
+            });
+    });
 }
