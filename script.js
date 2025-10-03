@@ -350,19 +350,57 @@ function generatePDF() {
     }
 
     const element = document.getElementById("preview");
-    // Erstelle eine Kopie des Elements für den PDF-Export
+    // Container für PDF-Export erstellen
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    document.body.appendChild(container);
+
+    // Kopie des Elements für den PDF-Export
     const pdfContent = element.cloneNode(true);
-    pdfContent.style.width = '210mm'; // A4 Breite
-    pdfContent.style.padding = '15mm';
+    container.appendChild(pdfContent);
+
+    // Stile für PDF-Content
+    pdfContent.style.width = '210mm';
     pdfContent.style.backgroundColor = 'white';
-    
+    pdfContent.style.padding = '20mm';
+    pdfContent.style.position = 'relative';
+    pdfContent.style.overflow = 'visible';
+
     // Stelle sicher, dass das Bild vollständig geladen ist
     const image = pdfContent.querySelector('#previewImage');
+    image.style.maxWidth = '170mm'; // A4 Breite minus Ränder
+    image.style.height = 'auto';
+    
     const imagePromise = new Promise((resolve) => {
         if (image.complete) {
             resolve();
         } else {
             image.onload = resolve;
+        }
+    });
+
+    // Tabellenstile anpassen
+    const table = pdfContent.querySelector('table');
+    if (table) {
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        const cells = table.getElementsByTagName('td');
+        for (let cell of cells) {
+            cell.style.padding = '2mm';
+            cell.style.borderBottom = '0.1mm solid #ccc';
+        }
+    }
+
+    // Listen-Stile anpassen
+    const lists = pdfContent.querySelectorAll('ul, ol');
+    lists.forEach(list => {
+        list.style.paddingLeft = '5mm';
+        list.style.marginBottom = '3mm';
+        const items = list.getElementsByTagName('li');
+        for (let item of items) {
+            item.style.marginBottom = '1mm';
         }
     });
 
@@ -384,7 +422,7 @@ function generatePDF() {
     imagePromise.then(() => {
         // PDF-Optionen
         const opt = {
-            margin: [15, 15, 15, 15], // Ränder in mm
+            margin: 0,
             filename: `${recipeName}.pdf`,
             image: { type: 'jpeg', quality: 1 },
             html2canvas: { 
@@ -393,21 +431,22 @@ function generatePDF() {
                 logging: true,
                 allowTaint: true,
                 backgroundColor: '#ffffff',
-                windowWidth: 800, // Feste Breite für konsistentes Rendering
+                width: 795, // A4 Breite in Pixeln bei 96 DPI
+                height: 1123, // A4 Höhe in Pixeln bei 96 DPI
                 onclone: function(clonedDoc) {
-                    // Stelle sicher, dass alle Stile korrekt übernommen wurden
+                    // Zusätzliche Stile für geklontes Element
                     const clonedElement = clonedDoc.querySelector('#preview');
-                    clonedElement.style.width = '100%';
-                    clonedElement.style.margin = '0';
-                    clonedElement.style.padding = '15mm';
+                    if (clonedElement) {
+                        clonedElement.style.transformOrigin = 'top left';
+                        clonedElement.style.transform = 'scale(1)';
+                    }
                 }
             },
             jsPDF: { 
                 unit: 'mm', 
                 format: 'a4', 
                 orientation: 'portrait',
-                compress: true,
-                hotfixes: ['px_scaling']
+                compress: true
             }
         };
 
@@ -418,12 +457,14 @@ function generatePDF() {
             .save()
             .then(() => {
                 document.body.removeChild(loadingMsg);
+                document.body.removeChild(container);
                 console.log('PDF erfolgreich erstellt');
             })
             .catch(error => {
                 console.error('PDF-Export Fehler:', error);
                 alert('Beim PDF-Export ist ein Fehler aufgetreten. Bitte versuche es erneut.');
                 document.body.removeChild(loadingMsg);
+                document.body.removeChild(container);
             });
     });
 }
