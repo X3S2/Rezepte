@@ -140,18 +140,45 @@ async function importRecipe(file) {
 
 // Exportiere die Vorschau als Bild (PNG)
 function exportImage() {
+    // Validierung der Pflichtfelder
+    const errors = [];
+    const recipeName = document.getElementById("recipeName").value;
+    const prepTime = document.getElementById("prepTime").value;
+    const cookTime = document.getElementById("cookTime").value;
+    const ingredients = document.querySelectorAll("#ingredients .flex");
+    const steps = document.querySelectorAll("#steps textarea");
+    const imageUrl = document.getElementById("previewImage").src;
+
+    if (!recipeName) errors.push("Name des Rezepts");
+    if (!prepTime) errors.push("Vorbereitungszeit");
+    if (!cookTime) errors.push("Kochzeit");
+    if (ingredients.length === 0 || !Array.from(ingredients).some(row => 
+        row.querySelector("input[type='number']").value && 
+        row.querySelector("input[type='text']").value)) {
+        errors.push("mindestens eine Zutat");
+    }
+    if (steps.length === 0 || !Array.from(steps).some(step => step.value.trim())) {
+        errors.push("mindestens einen Zubereitungsschritt");
+    }
+    if (imageUrl.includes('placeholder.png')) errors.push("ein Bild");
+
+    if (errors.length > 0) {
+        alert(`Bitte fülle folgende Pflichtfelder aus, bevor du ein Bild erstellst:\n\n- ${errors.join("\n- ")}`);
+        return;
+    }
+
     const element = document.getElementById("preview");
     if (window.domtoimage && typeof window.domtoimage.toPng === 'function') {
         window.domtoimage.toPng(element, { bgcolor: '#fff' })
             .then(function (dataUrl) {
                 const link = document.createElement('a');
-                link.download = `${document.getElementById("recipeName").value || "Rezept"}.png`;
+                link.download = `${recipeName}.png`;
                 link.href = dataUrl;
                 link.click();
             })
             .catch(function (error) {
-                alert('Bild-Export fehlgeschlagen: ' + (error && error.message ? error.message : error));
                 console.error('Bild-Export Fehler:', error);
+                alert('Bild-Export fehlgeschlagen. Bitte stelle sicher, dass alle Eingaben korrekt sind.');
             });
     } else {
         alert('Bild-Export nicht möglich: dom-to-image Bibliothek wurde nicht geladen.');
