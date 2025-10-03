@@ -349,31 +349,53 @@ function generatePDF() {
         return;
     }
 
-    // PDF-Container mit 25mm Rand erstellen
+    // PDF-Container erstellen - A4 Format: 210mm x 297mm
     const container = document.createElement('div');
-    container.style.visibility = 'hidden';
-    container.style.position = 'fixed';
-    container.style.width = '210mm';  // A4 Breite
-    container.style.padding = '25mm';  // 2.5cm Rand auf allen Seiten
+    container.style.width = '210mm';
+    container.style.height = '297mm';
+    container.style.margin = '0 auto';  // Horizontal zentriert
     container.style.backgroundColor = 'white';
+    container.style.position = 'fixed';
+    container.style.top = '2%';         // Leicht nach oben verschoben
+    container.style.left = '50%';
+    container.style.transform = 'translateX(-50%)';  // Nur horizontal zentrieren
+    container.style.boxSizing = 'border-box';
+    container.style.overflow = 'hidden';
+
+    // Innerer Container für den Inhalt mit Rändern
+    const content = document.createElement('div');
+    content.style.position = 'absolute';
+    content.style.top = '25mm';
+    content.style.left = '25mm';
+    content.style.width = '160mm';      // Feste Breite (210mm - 2 * 25mm)
+    content.style.height = '247mm';     // Feste Höhe (297mm - 2 * 25mm)
+    content.style.overflowY = 'auto';
+    content.style.boxSizing = 'border-box';
+    content.style.margin = '0 auto';
+
+    container.appendChild(content);
     document.body.appendChild(container);
 
     // Block 1: Titel, Bild und Meta-Informationen
     const block1 = document.createElement('div');
     block1.style.marginBottom = '15mm';
+    block1.style.width = '100%';
     
     const title = document.createElement('h1');
     title.style.fontSize = '24pt';
     title.style.marginBottom = '10mm';
+    title.style.width = '100%';
+    title.style.textAlign = 'left';
     title.textContent = recipeName;
     block1.appendChild(title);
 
     const recipeImage = document.createElement('img');
     recipeImage.src = imageUrl;
     recipeImage.style.width = '100%';
-    recipeImage.style.maxHeight = '100mm';
+    recipeImage.style.maxHeight = '80mm';  // Reduzierte Höhe
     recipeImage.style.objectFit = 'contain';
     recipeImage.style.marginBottom = '10mm';
+    recipeImage.style.display = 'block';
     block1.appendChild(recipeImage);
 
     const difficulty = document.getElementById("difficulty").value;
@@ -493,11 +515,14 @@ function generatePDF() {
     // Warte bis das Bild geladen ist
     const loadedImage = container.querySelector('img');
     const imagePromise = new Promise((resolve) => {
-        if (loadedImage.complete) {
-            resolve();
-        } else {
-            loadedImage.onload = resolve;
-        }
+        const checkImage = () => {
+            if (loadedImage.complete && loadedImage.naturalWidth !== 0) {
+                resolve();
+            } else {
+                setTimeout(checkImage, 100);
+            }
+        };
+        checkImage();
     });
 
     // Zeige Ladeindikator
@@ -516,23 +541,32 @@ function generatePDF() {
 
     // Warte bis das Bild geladen ist und erstelle dann das PDF
     imagePromise.then(() => {
+        // Stelle sicher, dass der Container im sichtbaren Bereich ist
+        container.scrollIntoView();
+        // Warte einen kurzen Moment, damit der Browser den Scroll-Vorgang abschließen kann
+        setTimeout(() => {
         // PDF-Optionen
         const opt = {
-            margin: 0,
             filename: `${recipeName}.pdf`,
-            image: { type: 'jpeg', quality: 1 },
+            margin: 0,
             html2canvas: { 
-                scale: 2,
+                scale: 1,  // Reduzierte Skalierung
                 useCORS: true,
-                logging: false,
-                allowTaint: true
+                logging: true,
+                allowTaint: true,
+                backgroundColor: '#FFFFFF',
+                width: 794,  // A4 Breite bei 96 DPI
+                height: 1123, // A4 Höhe bei 96 DPI
+                windowWidth: 794,
+                windowHeight: 1123
             },
             jsPDF: { 
                 unit: 'mm', 
                 format: 'a4', 
-                orientation: 'portrait'
-            },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                orientation: 'portrait',
+                compress: true,
+                precision: 16
+            }
         };
 
         // PDF erstellen
@@ -550,5 +584,6 @@ function generatePDF() {
                 document.body.removeChild(loadingMsg);
                 document.body.removeChild(container);
             });
+        }, 100); // Ende des setTimeout
     });
 }
