@@ -352,9 +352,12 @@ function generatePDF() {
     const element = document.getElementById("preview");
     // Container für PDF-Export erstellen
     const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.left = '-9999px';
+    container.style.visibility = 'hidden';
+    container.style.position = 'fixed';
     container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '210mm';
+    container.style.zIndex = '-1000';
     document.body.appendChild(container);
 
     // Kopie des Elements für den PDF-Export
@@ -365,8 +368,7 @@ function generatePDF() {
     pdfContent.style.width = '210mm';
     pdfContent.style.backgroundColor = 'white';
     pdfContent.style.padding = '20mm';
-    pdfContent.style.position = 'relative';
-    pdfContent.style.overflow = 'visible';
+    pdfContent.style.margin = '0';
 
     // Stelle sicher, dass das Bild vollständig geladen ist
     const image = pdfContent.querySelector('#previewImage');
