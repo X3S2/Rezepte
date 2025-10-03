@@ -349,62 +349,146 @@ function generatePDF() {
         return;
     }
 
-    const element = document.getElementById("preview");
-    // Container für PDF-Export erstellen
+    // PDF-Container mit 25mm Rand erstellen
     const container = document.createElement('div');
     container.style.visibility = 'hidden';
     container.style.position = 'fixed';
-    container.style.top = '0';
-    container.style.left = '0';
-    container.style.width = '210mm';
-    container.style.zIndex = '-1000';
+    container.style.width = '210mm';  // A4 Breite
+    container.style.padding = '25mm';  // 2.5cm Rand auf allen Seiten
+    container.style.backgroundColor = 'white';
     document.body.appendChild(container);
 
-    // Kopie des Elements für den PDF-Export
-    const pdfContent = element.cloneNode(true);
-    container.appendChild(pdfContent);
-
-    // Stile für PDF-Content
-    pdfContent.style.width = '210mm';
-    pdfContent.style.backgroundColor = 'white';
-    pdfContent.style.padding = '20mm';
-    pdfContent.style.margin = '0';
-
-    // Stelle sicher, dass das Bild vollständig geladen ist
-    const image = pdfContent.querySelector('#previewImage');
-    image.style.maxWidth = '170mm'; // A4 Breite minus Ränder
-    image.style.height = 'auto';
+    // Block 1: Titel, Bild und Meta-Informationen
+    const block1 = document.createElement('div');
+    block1.style.marginBottom = '15mm';
     
-    const imagePromise = new Promise((resolve) => {
-        if (image.complete) {
-            resolve();
-        } else {
-            image.onload = resolve;
+    const title = document.createElement('h1');
+    title.style.fontSize = '24pt';
+    title.style.marginBottom = '10mm';
+    title.textContent = recipeName;
+    block1.appendChild(title);
+
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    img.style.width = '100%';
+    img.style.maxHeight = '100mm';
+    img.style.objectFit = 'contain';
+    img.style.marginBottom = '10mm';
+    block1.appendChild(img);
+
+    const difficulty = document.getElementById("difficulty").value;
+    const stars = "★★★★★☆☆☆☆☆".slice(5 - difficulty, 10 - difficulty);
+    const total = parseInt(prepTime) + parseInt(cookTime);
+    const meta = document.createElement('p');
+    meta.style.fontSize = '11pt';
+    meta.style.marginBottom = '10mm';
+    meta.textContent = `Schwierigkeit: ${stars} | Gesamtzeit: ${total} Min. (${prepTime} Min. Vorbereitung, ${cookTime} Min. Kochen)`;
+    block1.appendChild(meta);
+
+    container.appendChild(block1);
+
+    // Block 2: Zutaten
+    const block2 = document.createElement('div');
+    block2.style.marginBottom = '15mm';
+    block2.style.pageBreakInside = 'avoid';
+    
+    const ingredientsTitle = document.createElement('h2');
+    ingredientsTitle.style.fontSize = '16pt';
+    ingredientsTitle.style.marginBottom = '5mm';
+    ingredientsTitle.textContent = '📝 Zutaten';
+    block2.appendChild(ingredientsTitle);
+
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    table.style.marginBottom = '10mm';
+    
+    // Tabellenkopf
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr>
+            <th style="text-align: left; padding: 2mm; border-bottom: 0.5mm solid #000; width: 15%">Menge</th>
+            <th style="text-align: left; padding: 2mm; border-bottom: 0.5mm solid #000; width: 20%">Einheit</th>
+            <th style="text-align: left; padding: 2mm; border-bottom: 0.5mm solid #000; width: 65%">Zutat</th>
+        </tr>
+    `;
+    table.appendChild(thead);
+
+    // Tabellenkörper
+    const tbody = document.createElement('tbody');
+    ingredients.forEach(row => {
+        const menge = row.querySelector("input[type='number']").value;
+        const einheit = row.querySelector("select").value;
+        const zutat = row.querySelector("input[type='text']").value;
+        if (menge && zutat) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 2mm; border-bottom: 0.1mm solid #ccc">${menge}</td>
+                <td style="padding: 2mm; border-bottom: 0.1mm solid #ccc">${einheit}</td>
+                <td style="padding: 2mm; border-bottom: 0.1mm solid #ccc">${zutat}</td>
+            `;
+            tbody.appendChild(tr);
         }
     });
+    table.appendChild(tbody);
+    block2.appendChild(table);
 
-    // Tabellenstile anpassen
-    const table = pdfContent.querySelector('table');
-    if (table) {
-        table.style.width = '100%';
-        table.style.borderCollapse = 'collapse';
-        const cells = table.getElementsByTagName('td');
-        for (let cell of cells) {
-            cell.style.padding = '2mm';
-            cell.style.borderBottom = '0.1mm solid #ccc';
+    container.appendChild(block2);
+
+    // Block 3: Zubereitung
+    const block3 = document.createElement('div');
+    block3.style.marginBottom = '15mm';
+    block3.style.pageBreakInside = 'avoid';
+    
+    const stepsTitle = document.createElement('h2');
+    stepsTitle.style.fontSize = '16pt';
+    stepsTitle.style.marginBottom = '5mm';
+    stepsTitle.textContent = '👨‍🍳 Zubereitung';
+    block3.appendChild(stepsTitle);
+
+    const stepsList = document.createElement('ol');
+    stepsList.style.paddingLeft = '5mm';
+    steps.forEach((step, index) => {
+        if (step.value.trim()) {
+            const li = document.createElement('li');
+            li.style.marginBottom = '2mm';
+            li.style.paddingLeft = '3mm';
+            li.textContent = step.value.trim();
+            stepsList.appendChild(li);
         }
+    });
+    block3.appendChild(stepsList);
+
+    container.appendChild(block3);
+
+    // Block 4: Tipps (falls vorhanden)
+    const tips = document.querySelectorAll("#tips input");
+    if (Array.from(tips).some(tip => tip.value.trim())) {
+        const block4 = document.createElement('div');
+        block4.style.marginBottom = '15mm';
+        block4.style.pageBreakInside = 'avoid';
+        
+        const tipsTitle = document.createElement('h2');
+        tipsTitle.style.fontSize = '16pt';
+        tipsTitle.style.marginBottom = '5mm';
+        tipsTitle.textContent = '💡 Tipps';
+        block4.appendChild(tipsTitle);
+
+        const tipsList = document.createElement('ul');
+        tipsList.style.paddingLeft = '5mm';
+        tips.forEach(tip => {
+            if (tip.value.trim()) {
+                const li = document.createElement('li');
+                li.style.marginBottom = '2mm';
+                li.style.paddingLeft = '3mm';
+                li.textContent = tip.value.trim();
+                tipsList.appendChild(li);
+            }
+        });
+        block4.appendChild(tipsList);
+
+        container.appendChild(block4);
     }
-
-    // Listen-Stile anpassen
-    const lists = pdfContent.querySelectorAll('ul, ol');
-    lists.forEach(list => {
-        list.style.paddingLeft = '5mm';
-        list.style.marginBottom = '3mm';
-        const items = list.getElementsByTagName('li');
-        for (let item of items) {
-            item.style.marginBottom = '1mm';
-        }
-    });
 
     // Zeige Ladeindikator
     const loadingMsg = document.createElement("div");
