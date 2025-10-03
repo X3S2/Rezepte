@@ -44,4 +44,4 @@ Ein modernes Rezept-Template als Web-App mit Exportfunktionen.
 2. Wählen Sie eine zuvor exportierte Rezept-JSON-Datei aus
 3. Das System prüft automatisch die Dateistruktur
 4. Nach erfolgreicher Validierung wird das Rezept mit allen Details geladen
-5. Sie können das importierte Rezept direkt bearbeiten oder als PDF exportieren
+5. Sie können das importierte Rezept direkt bearbeiten oder als Bild exportieren
